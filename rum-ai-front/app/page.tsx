@@ -19,27 +19,26 @@ export default function RumAIPage() {
     const [error, setError] = useState<string>('');
     const [dialogueSegments, setDialogueSegments] = useState<DialogueSegment[]>([]);
 
-    // Estado para controlar el porcentaje simulado de la barra con Chuki
     const [progress, setProgress] = useState<number>(0);
 
-    // Efecto para simular la barra de progreso mientras está cargando
     useEffect(() => {
         let interval: NodeJS.Timeout;
+
         if (loading) {
-            setProgress(0);
             interval = setInterval(() => {
                 setProgress((oldProgress) => {
                     if (oldProgress >= 95) {
-                        return 95; // Se detiene cerca del final hasta que el server responda
+                        return 95;
                     }
                     const randomIncrement = Math.floor(Math.random() * 8) + 2;
                     return Math.min(oldProgress + randomIncrement, 95);
                 });
             }, 400);
-        } else {
-            setProgress(0);
         }
-        return () => clearInterval(interval);
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
     }, [loading]);
 
     const handleDrag = (e: DragEvent<HTMLDivElement>) => {
@@ -77,6 +76,7 @@ export default function RumAIPage() {
             return;
         }
 
+        setProgress(0);
         setLoading(true);
         setError('');
         setTranscription('');
@@ -108,7 +108,6 @@ export default function RumAIPage() {
 
             const data = await response.json();
 
-            // Completamos la barra al 100% justo antes de pintar el resultado
             setProgress(100);
 
             setTimeout(() => {
@@ -131,12 +130,10 @@ export default function RumAIPage() {
         }
     };
 
-    // Función inteligente para copiar según la pestaña activa
     const handleCopy = () => {
         if (activeTab === 'text') {
             navigator.clipboard.writeText(transcription);
         } else {
-            // Convierte el array de diálogos en un bloque de texto ordenado por líneas
             const formattedDialogue = dialogueSegments
                 .map(seg => `${seg.speaker}: ${seg.text}`)
                 .join('\n');
@@ -202,17 +199,17 @@ export default function RumAIPage() {
                                 type="file"
                                 accept="audio/*,video/*"
                                 onChange={handleFileChange}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                             />
                             <div className="space-y-4">
-                                <div className="mx-auto w-14 h-14 rounded-xl bg-[#275BB2]/50 flex items-center justify-center border-2 border-[#4A2306]/40 text-[#00A859]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-7 h-7">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75V16.5m0 0V12m0 4.5h4.5M12 16.5h-4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                <div className="mx-auto w-14 h-14 rounded-xl bg-[#275BB2]/50 flex items-center justify-center border-2 border-[#4A2306]/40 text-[#00A859] shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
                                     </svg>
                                 </div>
                                 <div className="text-sm">
                                     {file ? (
-                                        <p className="font-black text-[#F15A24] bg-[#FCE3B4] py-1.5 px-4 rounded-lg inline-block border-2 border-[#603813] shadow-md">
+                                        <p className="font-black text-[#F15A24] bg-[#FCE3B4] py-1.5 px-4 rounded-lg inline-block border-2 border-[#603813] shadow-md relative z-30">
                                             🚀🚀🚀 Cargado: {file.name}
                                         </p>
                                     ) : (
@@ -230,7 +227,7 @@ export default function RumAIPage() {
                             disabled={loading || !file}
                             className={`w-full py-4 px-4 rounded-xl font-black uppercase tracking-wider text-base transition-all flex items-center justify-center gap-2 border-2 border-[#4A2306]/30 ${loading
                                 ? 'bg-[#603813]/80 text-[#FED1A7]/40 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-[#E25822] to-[#F15A24] hover:from-[#F15A24] hover:to-[#FED1A7] hover:text-[#231F20] text-[#FFFFFF] shadow-lg shadow-[#E25822]/30 active:scale-[0.99]'
+                                : 'bg-gradient-to-r from-[#E25822] to-[#F15A24] hover:from-[#F15A24] hover:to-[#FED1A7] hover:text-[#231F20] text-[#FFFFFF] shadow-lg shadow-[#E25822]/30 active:scale-[0.99] cursor-pointer'
                             }`}
                         >
                             {loading ? (
@@ -244,7 +241,26 @@ export default function RumAIPage() {
                         </button>
                     </form>
 
-                    {/* ─── BARRA DE PROGRESO PREMIUM CON CHUKI ─── */}
+                    <div className="mt-4 pt-2 border-t border-[#4A2306]/30 text-[#FED1A7] text-[11px] font-semibold tracking-wide normal-case bg-[#231F20]/40 p-2 rounded-lg text-center select-none flex flex-col sm:flex-row items-center justify-center gap-1.5">
+                        <span>💡 Si el bot se encuentra offline o no responde, por favor contacta al soporte técnico:</span>
+                        <a
+                            href="https://wa.me/447344489147"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[#F15A24] hover:text-[#ff9f1c] font-black font-mono tracking-wider hover:underline cursor-pointer transition-colors group"
+                        >
+                            {/* SVG Nativo de WhatsApp */}
+                            <svg
+                                className="w-3.5 h-3.5 text-[#00A859] group-hover:text-[#4caf50] transition-colors fill-current"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.411 0 11.989 0c3.183.001 6.177 1.24 8.43 3.496 2.254 2.256 3.491 5.253 3.491 8.434 0 6.646-5.352 11.993-11.934 11.993-2.002-.001-3.973-.51-5.716-1.486L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 1.977 14.07 .953 11.99 .953c-5.441 0-9.866 4.372-9.87 9.802 0 1.63.463 3.224 1.34 4.625l-1.024 3.737 3.83-1.001zM16.6 13.99c-.26-.13-1.532-.756-1.77-.84-.237-.087-.41-.13-.58.13-.17.26-.66.84-.81.1.012-.15-.15-.34-.412-.48-1.123-.56-1.954-1.233-2.67-2.457-.15-.26-.013-.4.124-.538.123-.124.262-.31.393-.46.13-.16.174-.266.26-.44.088-.17.044-.32-.022-.45-.065-.13-.58-1.4-.795-1.92-.21-.51-.425-.44-.58-.44-.152 0-.325-.01-.5-.01-.173 0-.455.06-.693.31-.238.24-.91.89-.91 2.17 0 1.28.932 2.51 1.06 2.69.13.17 1.83 2.79 4.43 3.91.62.27 1.1.43 1.48.55.62.2 1.19.17 1.64.1.5-.07 1.53-.63 1.74-1.23.21-.6.21-1.12.14-1.23-.07-.11-.26-.17-.52-.3z"/>
+                            </svg>
+                            <span>+44 7344 489147</span>
+                        </a>
+                    </div>
+
                     {loading && (
                         <div className="mt-6 space-y-2 animate-fade-in">
                             <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-[#FED1A7]">
@@ -252,13 +268,11 @@ export default function RumAIPage() {
                                 <span>{progress}%</span>
                             </div>
                             <div className="w-full h-4 bg-[#231F20] rounded-full border-2 border-[#4A2306]/60 relative overflow-visible">
-                                {/* Línea interna de color naranja */}
                                 <div
                                     className="h-full bg-gradient-to-r from-[#E25822] to-[#F15A24] rounded-full transition-all duration-300 ease-out"
                                     style={{ width: `${progress}%` }}
                                 ></div>
 
-                                {/* Contenedor de la cara de Chuki flotando justo en la punta de la barra */}
                                 <div
                                     className="absolute top-1/2 -translate-y-1/2 -ml-4 transition-all duration-300 ease-out z-10"
                                     style={{ left: `${progress}%` }}
@@ -268,7 +282,6 @@ export default function RumAIPage() {
                                         alt="Chuki"
                                         className="w-9 h-9 object-contain drop-shadow-[0_0_8px_rgba(241,90,36,0.6)] max-w-none"
                                         onError={(e) => {
-                                            // Fallback con un círculo naranja si no encuentra la foto
                                             e.currentTarget.style.display = 'none';
                                         }}
                                     />
@@ -278,8 +291,8 @@ export default function RumAIPage() {
                     )}
 
                     {error && (
-                        <div className="mt-4 p-3 bg-[#4A2306]/90 border-2 border-[#E25822] rounded-xl text-xs font-black text-[#FCE3B4] flex items-center gap-2 shadow-inner">
-                            🤢🤮 {error}
+                        <div className="mt-4 p-3 bg-[#4A2306]/90 border-2 border-[#E25822] rounded-xl text-xs font-black text-[#FCE3B4] flex items-center gap-2 shadow-inner animate-fade-in">
+                            🤢🤮 <span>{error}</span>
                         </div>
                     )}
                 </div>
@@ -290,7 +303,7 @@ export default function RumAIPage() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setActiveTab('text')}
-                                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all border-2 ${activeTab === 'text'
+                                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all border-2 cursor-pointer ${activeTab === 'text'
                                         ? 'bg-[#E25822] text-[#FFFFFF] border-[#FCE3B4] shadow-md'
                                         : 'bg-[#275BB2]/60 text-[#FED1A7] border-[#4A2306]/40 hover:text-[#FFFFFF]'
                                     }`}
@@ -299,7 +312,7 @@ export default function RumAIPage() {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('dialogue')}
-                                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all border-2 ${activeTab === 'dialogue'
+                                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all border-2 cursor-pointer ${activeTab === 'dialogue'
                                         ? 'bg-[#E25822] text-[#FFFFFF] border-[#FCE3B4] shadow-md'
                                         : 'bg-[#275BB2]/60 text-[#FED1A7] border-[#4A2306]/40 hover:text-[#FFFFFF]'
                                     }`}
