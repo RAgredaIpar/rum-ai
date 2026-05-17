@@ -118,7 +118,7 @@ export default function RumAIPage() {
                     setDialogueSegments(data.segments);
                 } else {
                     setDialogueSegments([
-                        { speaker: 'Hablante 1', text: data.text }
+                        { speaker: 'Hablante 1', text: data.text, time: '00:00' }
                     ]);
                 }
                 setLoading(false);
@@ -135,10 +135,38 @@ export default function RumAIPage() {
             navigator.clipboard.writeText(transcription);
         } else {
             const formattedDialogue = dialogueSegments
-                .map(seg => `${seg.speaker}: ${seg.text}`)
+                .map(seg => {
+                    const t = seg.time ? `[${seg.time}] ` : '';
+                    return `${t}${seg.speaker}: ${seg.text}`;
+                })
                 .join('\n');
             navigator.clipboard.writeText(formattedDialogue);
         }
+    };
+
+    const handleExportFile = () => {
+        let fileContent = "";
+
+        if (activeTab === 'text') {
+            fileContent = transcription;
+        } else {
+            fileContent = dialogueSegments
+                .map(seg => {
+                    const timestamp = seg.time ? `[${seg.time}] ` : "";
+                    return `${timestamp}${seg.speaker}: ${seg.text}`;
+                })
+                .join('\n');
+        }
+
+        const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `rum_ai_transcripcion_${activeTab}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -244,12 +272,11 @@ export default function RumAIPage() {
                     <div className="mt-4 pt-2 border-t border-[#4A2306]/30 text-[#FED1A7] text-[11px] font-semibold tracking-wide normal-case bg-[#231F20]/40 p-2 rounded-lg text-center select-none flex flex-col sm:flex-row items-center justify-center gap-1.5">
                         <span>💡 Si el bot se encuentra offline o no responde, por favor contacta al soporte técnico:</span>
                         <a
-                            href="https://wa.me/447344489147"
+                            href="https://wa.me/447344489147?text=%C2%A1Hola%20Noltek!%20El%20bot%20rum-AI%20est%C3%A1%20offline%2C%20%C2%BFpodr%C3%ADas%20encenderlo%3F"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[#F15A24] hover:text-[#ff9f1c] font-black font-mono tracking-wider hover:underline cursor-pointer transition-colors group"
                         >
-                            {/* SVG Nativo de WhatsApp */}
                             <svg
                                 className="w-3.5 h-3.5 text-[#00A859] group-hover:text-[#4caf50] transition-colors fill-current"
                                 viewBox="0 0 24 24"
@@ -264,7 +291,7 @@ export default function RumAIPage() {
                     {loading && (
                         <div className="mt-6 space-y-2 animate-fade-in">
                             <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-[#FED1A7]">
-                                <span>Alimentando al motor de IA...</span>
+                                <span>Dejame dormir...</span>
                                 <span>{progress}%</span>
                             </div>
                             <div className="w-full h-4 bg-[#231F20] rounded-full border-2 border-[#4A2306]/60 relative overflow-visible">
@@ -334,16 +361,23 @@ export default function RumAIPage() {
                                 <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                                     {dialogueSegments.map((seg, idx) => (
                                         <div key={idx} className="flex flex-col gap-1 text-sm border-l-4 border-[#F15A24] pl-4 py-1.5 bg-[#231F20]/50 rounded-r-lg pr-2">
-                                            <span className="font-black text-xs text-[#FED1A7] tracking-wider uppercase">
-                                                {seg.speaker}
-                                            </span>
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="font-black text-xs text-[#FED1A7] tracking-wider uppercase">
+                                                    {seg.speaker}
+                                                </span>
+                                                {seg.time && (
+                                                    <span className="text-[10px] font-mono font-bold bg-[#11294a] text-[#FCE3B4] px-1.5 py-0.2 rounded border border-[#275BB2]/40 shadow-sm select-none">
+                                                        [{seg.time}]
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-[#FFFFFF] font-medium leading-relaxed">{seg.text}</p>
                                         </div>
                                     ))}
                                 </div>
                             )}
 
-                            <div className="mt-6 pt-4 border-t-2 border-[#603813]/20 flex justify-end">
+                            <div className="mt-6 pt-4 border-t-2 border-[#603813]/20 flex justify-end gap-4">
                                 <button
                                     onClick={handleCopy}
                                     className="flex items-center gap-1.5 text-xs font-black text-[#FCE3B4] hover:text-[#E25822] transition-colors uppercase tracking-wider cursor-pointer active:scale-95 select-none"
@@ -351,7 +385,17 @@ export default function RumAIPage() {
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
                                     </svg>
-                                    {activeTab === 'text' ? 'Copiar Texto Corrido' : 'Copiar Diálogo de Voces'}
+                                    {activeTab === 'text' ? 'Copiar Texto' : 'Copiar Diálogo'}
+                                </button>
+
+                                <button
+                                    onClick={handleExportFile}
+                                    className="flex items-center gap-1.5 text-xs font-black text-[#00A859] hover:text-[#4caf50] transition-colors uppercase tracking-wider cursor-pointer active:scale-95 select-none border border-[#00A859]/30 px-2.5 py-1 rounded-md bg-[#00A859]/5 hover:bg-[#00A859]/10"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                    </svg>
+                                    Descargar .TXT
                                 </button>
                             </div>
                         </div>
