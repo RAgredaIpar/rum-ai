@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, DragEvent, ChangeEvent } from 'react';
+import { useState, DragEvent, ChangeEvent, useEffect } from 'react';
 
 interface DialogueSegment {
     speaker: string;
@@ -18,6 +18,29 @@ export default function RumAIPage() {
     const [language, setLanguage] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [dialogueSegments, setDialogueSegments] = useState<DialogueSegment[]>([]);
+
+    // Estado para controlar el porcentaje simulado de la barra con Chuki
+    const [progress, setProgress] = useState<number>(0);
+
+    // Efecto para simular la barra de progreso mientras está cargando
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (loading) {
+            setProgress(0);
+            interval = setInterval(() => {
+                setProgress((oldProgress) => {
+                    if (oldProgress >= 95) {
+                        return 95; // Se detiene cerca del final hasta que el server responda
+                    }
+                    const randomIncrement = Math.floor(Math.random() * 8) + 2;
+                    return Math.min(oldProgress + randomIncrement, 95);
+                });
+            }, 400);
+        } else {
+            setProgress(0);
+        }
+        return () => clearInterval(interval);
+    }, [loading]);
 
     const handleDrag = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -74,7 +97,6 @@ export default function RumAIPage() {
             const response = await fetch(`${backendUrl}/transcribe`, {
                 method: 'POST',
                 headers: {
-                    // 🔥 AQUÍ ESTÁ LA MAGIA PARA SALTAR EL BLOQUEO DE NGROK 🔥
                     "ngrok-skip-browser-warning": "69420"
                 },
                 body: formData,
@@ -86,21 +108,39 @@ export default function RumAIPage() {
 
             const data = await response.json();
 
-            setTranscription(data.text);
-            setLanguage(data.language || 'es');
+            // Completamos la barra al 100% justo antes de pintar el resultado
+            setProgress(100);
 
-            if (data.segments) {
-                setDialogueSegments(data.segments);
-            } else {
-                setDialogueSegments([
-                    { speaker: 'Hablante 1', text: data.text }
-                ]);
-            }
+            setTimeout(() => {
+                setTranscription(data.text);
+                setLanguage(data.language || 'es');
+
+                if (data.segments) {
+                    setDialogueSegments(data.segments);
+                } else {
+                    setDialogueSegments([
+                        { speaker: 'Hablante 1', text: data.text }
+                    ]);
+                }
+                setLoading(false);
+            }, 300);
 
         } catch (err: any) {
             setError(err.message || 'Error al procesar el audio.');
-        } finally {
             setLoading(false);
+        }
+    };
+
+    // Función inteligente para copiar según la pestaña activa
+    const handleCopy = () => {
+        if (activeTab === 'text') {
+            navigator.clipboard.writeText(transcription);
+        } else {
+            // Convierte el array de diálogos en un bloque de texto ordenado por líneas
+            const formattedDialogue = dialogueSegments
+                .map(seg => `${seg.speaker}: ${seg.text}`)
+                .join('\n');
+            navigator.clipboard.writeText(formattedDialogue);
         }
     };
 
@@ -204,6 +244,39 @@ export default function RumAIPage() {
                         </button>
                     </form>
 
+                    {/* ─── BARRA DE PROGRESO PREMIUM CON CHUKI ─── */}
+                    {loading && (
+                        <div className="mt-6 space-y-2 animate-fade-in">
+                            <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-[#FED1A7]">
+                                <span>Alimentando al motor de IA...</span>
+                                <span>{progress}%</span>
+                            </div>
+                            <div className="w-full h-4 bg-[#231F20] rounded-full border-2 border-[#4A2306]/60 relative overflow-visible">
+                                {/* Línea interna de color naranja */}
+                                <div
+                                    className="h-full bg-gradient-to-r from-[#E25822] to-[#F15A24] rounded-full transition-all duration-300 ease-out"
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+
+                                {/* Contenedor de la cara de Chuki flotando justo en la punta de la barra */}
+                                <div
+                                    className="absolute top-1/2 -translate-y-1/2 -ml-4 transition-all duration-300 ease-out z-10"
+                                    style={{ left: `${progress}%` }}
+                                >
+                                    <img
+                                        src="/chuki.png"
+                                        alt="Chuki"
+                                        className="w-9 h-9 object-contain drop-shadow-[0_0_8px_rgba(241,90,36,0.6)] max-w-none"
+                                        onError={(e) => {
+                                            // Fallback con un círculo naranja si no encuentra la foto
+                                            e.currentTarget.style.display = 'none';
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {error && (
                         <div className="mt-4 p-3 bg-[#4A2306]/90 border-2 border-[#E25822] rounded-xl text-xs font-black text-[#FCE3B4] flex items-center gap-2 shadow-inner">
                             🤢🤮 {error}
@@ -259,13 +332,13 @@ export default function RumAIPage() {
 
                             <div className="mt-6 pt-4 border-t-2 border-[#603813]/20 flex justify-end">
                                 <button
-                                    onClick={() => navigator.clipboard.writeText(transcription)}
-                                    className="flex items-center gap-1.5 text-xs font-black text-[#FCE3B4] hover:text-[#E25822] transition-colors uppercase tracking-wider"
+                                    onClick={handleCopy}
+                                    className="flex items-center gap-1.5 text-xs font-black text-[#FCE3B4] hover:text-[#E25822] transition-colors uppercase tracking-wider cursor-pointer active:scale-95 select-none"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
                                     </svg>
-                                    Copiar Transcripción
+                                    {activeTab === 'text' ? 'Copiar Texto Corrido' : 'Copiar Diálogo de Voces'}
                                 </button>
                             </div>
                         </div>

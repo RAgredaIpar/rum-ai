@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
     title: "rum-AI",
     description: "Transcribe y analiza tus audios con el poder de rum-AI",
+    icons: {
+        icon: '/crash.png'
+    }
 };
 
 export default function RootLayout({
