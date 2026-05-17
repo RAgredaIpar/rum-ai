@@ -1,0 +1,7 @@
+# Entorno virtual y variables secretas
+.env
+rum-ai-back/.env
+
+# Configuraciones de editores de código
+.idea/
+rum-ai-back/.idea/
